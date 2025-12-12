@@ -55,14 +55,13 @@ def processar_app(app):
 
     versao = None
     
-    # 1. Tenta extrair do Link PRIMEIRO (Para pegar 11.0.5.420)
-    # Procura numeros grandes tipo 11.0.5.420
+    # 1. Tenta extrair do Link (Prioridade)
     match = re.search(r"v?(\d+\.\d+\.\d+\.\d+)", app["url"])
     if match:
         versao = match.group(1)
         print(f"Versão extraída do link: {versao}")
 
-    # 2. Se não achar no link, tenta ler versão interna
+    # 2. Tenta interna
     if not versao:
         versao = obter_versao_exe(TEMP_FILE)
         print(f"Versão interna: {versao}")
@@ -71,27 +70,25 @@ def processar_app(app):
     if not versao:
         versao = app.get("manualVersion", "0.0.0.1")
 
-    print(f"VERSÃO FINAL USADA: {versao}")
+    print(f"VERSÃO FINAL: {versao}")
 
-    # Pastas da Versão (Histórico)
-    publisher = app['publisher'].replace(" ", "")
-    name = app['name'].replace(" ", "")
-    path_dir = f"{BASE_PATH}/{publisher[0].lower()}/{publisher}/{name}/{versao}"
+    # Pastas e Hash
+    safe_publisher = app['publisher'].replace(" ", "")
+    safe_name = app['name'].replace(" ", "")
+    
+    path_dir = f"{BASE_PATH}/{safe_publisher[0].lower()}/{safe_publisher}/{safe_name}/{versao}"
     Path(path_dir).mkdir(parents=True, exist_ok=True)
     
-    # Hash
     h = hashlib.sha256()
     with open(TEMP_FILE, "rb") as f:
         while chunk := f.read(8192):
             h.update(chunk)
     hash_str = h.hexdigest()
-
     base_id = app['id']
-    
-    # --- ARQUIVOS DA VERSÃO ESPECÍFICA ---
-    arquivo_principal = f"{path_dir}/{base_id}.yaml"
-    
-    manifest_principal = {
+
+    # --- PARTE 1: GERA HISTÓRICO (Padrão Microsoft - Múltiplos Arquivos) ---
+    # Isso mantém seu repo organizado por versões
+    criar_yaml(f"{path_dir}/{base_id}.yaml", {
         "PackageIdentifier": base_id,
         "PackageVersion": versao,
         "PackageLocale": "en-US",
@@ -99,8 +96,7 @@ def processar_app(app):
         "PackageName": app["name"],
         "ManifestType": "version",
         "ManifestVersion": "1.4.0"
-    }
-    criar_yaml(arquivo_principal, manifest_principal)
+    })
 
     criar_yaml(f"{path_dir}/{base_id}.installer.yaml", {
         "PackageIdentifier": base_id,
@@ -121,26 +117,36 @@ def processar_app(app):
         "PackageLocale": "en-US",
         "Publisher": app["publisher"],
         "PackageName": app["name"],
-        "ShortDescription": app["name"],
         "ManifestType": "defaultLocale",
         "ManifestVersion": "1.4.0"
     })
 
-    # --- O SEGREDO: CRIAR O ARQUIVO "LATEST" FIXO ---
-    # Criamos uma pasta "latest" na raiz dos manifests
+    # --- PARTE 2: GERA LINK PERMANENTE (Singleton - Tudo em um) ---
+    # Aqui a mágica: Criamos um arquivo que funciona SOZINHO na pasta latest
     pasta_latest = f"{BASE_PATH}/latest"
     Path(pasta_latest).mkdir(parents=True, exist_ok=True)
     
-    # Salva o arquivo principal lá com um nome fixo
-    caminho_latest = f"{pasta_latest}/{name}.yaml"
-    criar_yaml(caminho_latest, manifest_principal)
+    # O nome do arquivo será NomeDoApp.yaml (ex: Chrome.yaml, App.yaml)
+    caminho_latest = f"{pasta_latest}/{safe_name}.yaml"
     
-    # Precisamos "mergear" o installer no latest para funcionar com um arquivo só no link direto
-    # (Truque para o winget aceitar 1 arquivo só no comando raw)
-    # Na verdade, para --manifest, o ideal é apontar para o arquivo de versão, mas ele precisa achar os outros.
-    # Vamos simplificar: O link fixo vai apontar para o arquivo que o script acabou de gerar.
+    manifest_singleton = {
+        "PackageIdentifier": base_id,
+        "PackageVersion": versao,
+        "PackageLocale": "en-US",
+        "Publisher": app["publisher"],
+        "PackageName": app["name"],
+        "ManifestType": "singleton", # Tipo especial que contém tudo
+        "ManifestVersion": "1.4.0",
+        "Installers": [{
+            "Architecture": "x64",
+            "InstallerUrl": app["url"],
+            "InstallerSha256": hash_str,
+            "InstallerType": "exe"
+        }]
+    }
     
-    print(f"Sucesso! Versão {versao} gerada.")
+    criar_yaml(caminho_latest, manifest_singleton)
+    print(f"Sucesso! Link permanente atualizado: {caminho_latest}")
     
     # Limpeza
     if os.path.exists(TEMP_FILE):
