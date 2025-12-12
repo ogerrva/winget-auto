@@ -1,0 +1,7 @@
+PackageIdentifier: NVIDIA.App
+PackageVersion: 1.0.16.0
+PackageLocale: en-US
+Publisher: NVIDIA
+PackageName: App
+ManifestType: version
+ManifestVersion: 1.4.0
