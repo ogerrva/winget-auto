@@ -3,5 +3,10 @@ PackageVersion: 11.0.5.420
 PackageLocale: en-US
 Publisher: NVIDIA
 PackageName: App
-ManifestType: version
+ManifestType: singleton
 ManifestVersion: 1.4.0
+Installers:
+- Architecture: x64
+  InstallerUrl: https://us.download.nvidia.com/nvapp/client/11.0.5.420/NVIDIA_app_v11.0.5.420.exe
+  InstallerSha256: a5283562cd12cd94d28fc373c2d805054e626c29a2f33831936df6671200ab01
+  InstallerType: exe
