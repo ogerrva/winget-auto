@@ -1,0 +1,10 @@
+PackageIdentifier: NVIDIA.App
+PackageVersion: Not found
+InstallerType: exe
+Installers:
+- Architecture: x64
+  InstallerUrl: https://us.download.nvidia.com/nvapp/client/latest/NVIDIA_app_latest.exe
+  InstallerSha256: 493fda53120050f85836032324409be6c6484f90a0755ae0c6a673ba7626818b
+  InstallerSwitches:
+    Silent: /silent
+    SilentWithProgress: /silent
