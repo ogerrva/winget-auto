@@ -3,7 +3,7 @@ PackageVersion: 0.0.0.1
 InstallerType: exe
 Installers:
 - Architecture: x64
-  InstallerUrl: https://login.microsoftonline.com/43083d15-7273-40c1-b7db-39efd9ccc17a/oauth2/v2.0/authorize?client_id=ea7a59bf-4742-4921-af21-a6038c499e1f&nonce=T3bN4QKE7Ki0MpaR1IsHKIcSuUQoRnYaBgEt811Nm8Y%3D&redirect_uri=https%3A%2F%2Fnvidia-be.glean.com%2Fauthorization-code%2Fcallback&response_mode=query&response_type=code&scope=openid+profile+email+offline_access&state=P8LuF_OFJIDNrq3lix7TDVgABj8JqqFYTRH3lo-qrg0%3D
-  InstallerSha256: ff61b8d29068c98724e3c2d8f58b712e4eae9441088a65c67f915b1fcdf5d4a0
+  InstallerUrl: https://login.microsoftonline.com/43083d15-7273-40c1-b7db-39efd9ccc17a/oauth2/v2.0/authorize?client_id=ea7a59bf-4742-4921-af21-a6038c499e1f&nonce=zlug439DJwZ7w1FCPR7KN9f5LsihhuLb618ABwi5uBc%3D&redirect_uri=https%3A%2F%2Fnvidia-be.glean.com%2Fauthorization-code%2Fcallback&response_mode=query&response_type=code&scope=openid+profile+email+offline_access&state=0Kv3B5_H911rT_Dsrdp1WHf2x3c89Gh1NcpsPhmuMYc%3D
+  InstallerSha256: 8033bc824e0491406694dceb8a0445fc1fd2bb15966c593c6e0f6935edbe145c
 ManifestType: installer
 ManifestVersion: 1.4.0
