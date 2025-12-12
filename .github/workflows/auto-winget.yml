@@ -30,7 +30,7 @@ jobs:
           python-version: "3.11"
 
       - name: Instalar Dependências
-        run: pip install pyyaml requests
+        run: pip install pyyaml requests pefile
 
       - name: Verificar arquivos
         run: |
