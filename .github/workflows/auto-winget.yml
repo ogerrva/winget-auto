@@ -1,52 +1,60 @@
-name: Auto Winget Packager
+name: Auto Winget Pro
 
 on:
-  # O 'push' garante que o workflow rode assim que você salvar este arquivo
   push:
     branches: ["main"]
-  
-  # Permite rodar manualmente se precisar testar
   workflow_dispatch:
-  
-  # Roda automaticamente a cada 6 horas
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "0 */6 * * *" # Roda a cada 6 horas
 
-# Dá permissão para o robô escrever no repositório
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  auto-update:
+  build-and-deploy:
     runs-on: windows-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout do Repositório
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Instalar Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Instalar Dependências
+      - name: Instalar Dependências (pefile)
         run: pip install pyyaml requests pefile
 
-      - name: Verificar arquivos
-        run: |
-          if (Test-Path scripts/apps.json) { Write-Host "apps.json encontrado." } else { Write-Error "ERRO: scripts/apps.json não existe!" }
-          if (Test-Path scripts/generate_manifest.py) { Write-Host "Script Python encontrado." } else { Write-Error "ERRO: scripts/generate_manifest.py não existe!" }
-
-      - name: Executar Gerador de Manifests
+      - name: Gerar Manifests
         run: python scripts/generate_manifest.py
 
-      - name: Salvar Alterações (Commit & Push)
+      - name: Commitar novos manifests no Repositório
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add manifests/*
-          
-          # Só faz commit se houver mudanças
+          git add manifests/
           git diff --staged --quiet || git commit -m "Auto update: novos manifests gerados [skip ci]"
-          
           git push
+
+      - name: Preparar site para GitHub Pages
+        # Aqui copiamos os manifests para uma pasta 'public' que será o site
+        run: |
+          New-Item -ItemType Directory -Path "public" -Force
+          Copy-Item -Path "manifests" -Destination "public/manifests" -Recurse
+          # Criar uma página simples para não dar erro 404 na raiz
+          Set-Content -Path "public/index.html" -Value "<h1>Repositorio Winget Privado Ativo</h1><p>Use os links dos manifests para instalar.</p>"
+
+      - name: Upload para o GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public'
+
+      - name: Deploy Final
+        id: deployment
+        uses: actions/deploy-pages@v3
