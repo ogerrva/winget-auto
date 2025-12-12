@@ -1,12 +1,18 @@
-name: Auto Winget (Sem Site)
+name: Auto Winget (Final)
 
 on:
+  # Roda assim que você fizer o push deste arquivo
   push:
     branches: ["main"]
+  
+  # Permite rodar manualmente clicando no botão
   workflow_dispatch:
+  
+  # Roda automaticamente a cada 6 horas
   schedule:
-    - cron: "0 */6 * * *" # Roda a cada 6 horas
+    - cron: "0 */6 * * *"
 
+# Permissões para o robô salvar os arquivos no seu repositório
 permissions:
   contents: write
 
@@ -15,36 +21,38 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout do Repositório
         uses: actions/checkout@v4
 
-      - name: Instalar Python
+      - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Instalar Dependências (pefile)
+      - name: Instalar Dependências
+        # Instala pefile (para ler versão) e requests (para baixar)
         run: pip install pyyaml requests pefile
 
-      - name: Gerar Manifests
+      - name: Rodar Script Gerador
         run: python scripts/generate_manifest.py
 
-      - name: Verificar se manifests foram criados
-        run: |
-          if (Test-Path manifests) { 
-            Write-Host "Pasta manifests existe." 
-          } else { 
-            Write-Error "ERRO: Pasta manifests não foi criada!" 
-          }
-
-      - name: Salvar Manifests no Repositório
+      - name: Salvar Alterações (Commit & Push)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
+          # Adiciona os arquivos gerados
           git add manifests/
           
-          # Verifica se tem algo novo para salvar
-          git diff --staged --quiet || git commit -m "Auto update: novos manifests gerados [skip ci]"
+          # --- CORREÇÃO DO ERRO DE GIT ---
+          # Puxa alterações remotas antes de enviar para evitar conflito
+          git pull origin main --rebase || echo "Repositório já estava atualizado."
           
-          git push
+          # Só faz commit se houver mudanças reais
+          if (git diff --staged --quiet) {
+            Write-Host "Nenhuma mudança detectada nos manifests."
+          } else {
+            git commit -m "Auto update: novos manifests gerados [skip ci]"
+            git push
+            Write-Host "Sucesso! Novos manifests enviados."
+          }
