@@ -3,8 +3,6 @@
         "id": "NVIDIA.App",
         "publisher": "NVIDIA",
         "name": "App",
-        "url": "https://us.download.nvidia.com/nvapp/client/11.0.5.420/NVIDIA_app_v11.0.5.420.exe",
-        "search_page": "https://www.guru3d.com/files-details/nvidia-app-download.html",
-        "search_regex": "(https://us.download.nvidia.com/nvapp/client/.*?/NVIDIA_app_v.*?\\.exe)"
+        "url": "https://us.download.nvidia.com/nvapp/client/11.0.5.420/NVIDIA_app_v11.0.5.420.exe"
     }
 ]
