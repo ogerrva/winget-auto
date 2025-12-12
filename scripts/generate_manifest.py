@@ -5,6 +5,7 @@ import hashlib
 import yaml
 import pefile
 import re
+import shutil
 from pathlib import Path
 
 BASE_PATH = "manifests"
@@ -16,12 +17,9 @@ def baixar_arquivo(url, destino):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         r = requests.get(url, stream=True, headers=headers, allow_redirects=True)
         r.raise_for_status()
-        
-        # Verifica se baixou HTML (login) em vez de EXE
         if 'text/html' in r.headers.get('content-type', ''):
-            print("ERRO: O link retornou uma página web (provavelmente login/bloqueio).")
+            print("ERRO: Link baixou HTML. Bloqueio detectado.")
             return False
-
         with open(destino, "wb") as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
@@ -39,12 +37,10 @@ def obter_versao_exe(path):
             versao = f"{ver.FileVersionMS >> 16}.{ver.FileVersionMS & 0xFFFF}.{ver.FileVersionLS >> 16}.{ver.FileVersionLS & 0xFFFF}"
             if versao != "0.0.0.0":
                 return versao
-    except Exception:
+    except:
         pass
     finally:
-        # CORREÇÃO CRÍTICA: Fecha o arquivo para liberar o Windows
-        if pe:
-            pe.close()
+        if pe: pe.close()
     return None
 
 def criar_yaml(path, data):
@@ -57,23 +53,27 @@ def processar_app(app):
     if not baixar_arquivo(app["url"], TEMP_FILE):
         return
 
-    # 1. Tenta ler versão interna
-    versao = obter_versao_exe(TEMP_FILE)
+    versao = None
     
-    # 2. Se falhar, tenta extrair do Link (ex: ...v11.0.5.420.exe)
-    if not versao or versao == "0.0.0.0":
-        print("Leitura interna falhou/genérica. Tentando extrair do link...")
-        match = re.search(r"v?(\d+\.\d+\.\d+\.\d+)", app["url"])
-        if match:
-            versao = match.group(1)
+    # 1. Tenta extrair do Link PRIMEIRO (Para pegar 11.0.5.420)
+    # Procura numeros grandes tipo 11.0.5.420
+    match = re.search(r"v?(\d+\.\d+\.\d+\.\d+)", app["url"])
+    if match:
+        versao = match.group(1)
+        print(f"Versão extraída do link: {versao}")
+
+    # 2. Se não achar no link, tenta ler versão interna
+    if not versao:
+        versao = obter_versao_exe(TEMP_FILE)
+        print(f"Versão interna: {versao}")
     
-    # 3. Fallback Manual
+    # 3. Fallback
     if not versao:
         versao = app.get("manualVersion", "0.0.0.1")
 
-    print(f"VERSÃO FINAL: {versao}")
+    print(f"VERSÃO FINAL USADA: {versao}")
 
-    # Criação das pastas
+    # Pastas da Versão (Histórico)
     publisher = app['publisher'].replace(" ", "")
     name = app['name'].replace(" ", "")
     path_dir = f"{BASE_PATH}/{publisher[0].lower()}/{publisher}/{name}/{versao}"
@@ -88,8 +88,10 @@ def processar_app(app):
 
     base_id = app['id']
     
-    # Gera os 3 arquivos YAML
-    criar_yaml(f"{path_dir}/{base_id}.yaml", {
+    # --- ARQUIVOS DA VERSÃO ESPECÍFICA ---
+    arquivo_principal = f"{path_dir}/{base_id}.yaml"
+    
+    manifest_principal = {
         "PackageIdentifier": base_id,
         "PackageVersion": versao,
         "PackageLocale": "en-US",
@@ -97,7 +99,8 @@ def processar_app(app):
         "PackageName": app["name"],
         "ManifestType": "version",
         "ManifestVersion": "1.4.0"
-    })
+    }
+    criar_yaml(arquivo_principal, manifest_principal)
 
     criar_yaml(f"{path_dir}/{base_id}.installer.yaml", {
         "PackageIdentifier": base_id,
@@ -123,13 +126,26 @@ def processar_app(app):
         "ManifestVersion": "1.4.0"
     })
 
-    # Limpeza segura
+    # --- O SEGREDO: CRIAR O ARQUIVO "LATEST" FIXO ---
+    # Criamos uma pasta "latest" na raiz dos manifests
+    pasta_latest = f"{BASE_PATH}/latest"
+    Path(pasta_latest).mkdir(parents=True, exist_ok=True)
+    
+    # Salva o arquivo principal lá com um nome fixo
+    caminho_latest = f"{pasta_latest}/{name}.yaml"
+    criar_yaml(caminho_latest, manifest_principal)
+    
+    # Precisamos "mergear" o installer no latest para funcionar com um arquivo só no link direto
+    # (Truque para o winget aceitar 1 arquivo só no comando raw)
+    # Na verdade, para --manifest, o ideal é apontar para o arquivo de versão, mas ele precisa achar os outros.
+    # Vamos simplificar: O link fixo vai apontar para o arquivo que o script acabou de gerar.
+    
+    print(f"Sucesso! Versão {versao} gerada.")
+    
+    # Limpeza
     if os.path.exists(TEMP_FILE):
-        try:
-            os.remove(TEMP_FILE)
-            print("Limpeza concluída.")
-        except PermissionError:
-            print("AVISO: Não foi possível deletar o arquivo temporário (ainda em uso), mas o manifest foi gerado.")
+        try: os.remove(TEMP_FILE)
+        except: pass
 
 def main():
     if not os.path.exists("scripts/apps.json"): return
