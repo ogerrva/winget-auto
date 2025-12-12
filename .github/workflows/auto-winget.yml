@@ -1,4 +1,4 @@
-name: Auto Winget Pro
+name: Auto Winget (Sem Site)
 
 on:
   push:
@@ -9,15 +9,10 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
-  build-and-deploy:
+  auto-update:
     runs-on: windows-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout
@@ -34,27 +29,22 @@ jobs:
       - name: Gerar Manifests
         run: python scripts/generate_manifest.py
 
-      - name: Commitar novos manifests no Repositório
+      - name: Verificar se manifests foram criados
+        run: |
+          if (Test-Path manifests) { 
+            Write-Host "Pasta manifests existe." 
+          } else { 
+            Write-Error "ERRO: Pasta manifests não foi criada!" 
+          }
+
+      - name: Salvar Manifests no Repositório
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
           git add manifests/
+          
+          # Verifica se tem algo novo para salvar
           git diff --staged --quiet || git commit -m "Auto update: novos manifests gerados [skip ci]"
+          
           git push
-
-      - name: Preparar site para GitHub Pages
-        # Aqui copiamos os manifests para uma pasta 'public' que será o site
-        run: |
-          New-Item -ItemType Directory -Path "public" -Force
-          Copy-Item -Path "manifests" -Destination "public/manifests" -Recurse
-          # Criar uma página simples para não dar erro 404 na raiz
-          Set-Content -Path "public/index.html" -Value "<h1>Repositorio Winget Privado Ativo</h1><p>Use os links dos manifests para instalar.</p>"
-
-      - name: Upload para o GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './public'
-
-      - name: Deploy Final
-        id: deployment
-        uses: actions/deploy-pages@v3
