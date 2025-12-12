@@ -4,5 +4,13 @@
         "publisher": "NVIDIA",
         "name": "App",
         "url": "https://us.download.nvidia.com/nvapp/client/11.0.5.420/NVIDIA_app_v11.0.5.420.exe"
+    },
+    {
+        "id": "AMD.Adrenalin",
+        "publisher": "AMD",
+        "name": "AMD: Adrenalin",
+        "url": "https://drivers.amd.com/drivers/installer/25.20/whql/amd-software-adrenalin-edition-25.12.1-minimalsetup-251207_web.exe",
+        "search_page": "https://www.amd.com/pt/support/download/drivers.html",
+        "search_regex": "https://www.amd.com/pt/support/download/drivers.html"
     }
 ]
