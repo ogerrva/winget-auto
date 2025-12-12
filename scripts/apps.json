@@ -3,7 +3,6 @@
         "id": "NVIDIA.App",
         "publisher": "NVIDIA",
         "name": "App",
-        "url": "https://us.download.nvidia.com/nvapp/client/latest/NVIDIA_app_latest.exe",
-        "versionApi": "https://us.download.nvidia.com/nvapp/client/latest/version.txt"
+        "url": "https://us.download.nvidia.com/nvapp/client/latest/NVIDIA_app_latest.exe"
     }
 ]
