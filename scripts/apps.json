@@ -9,7 +9,7 @@
         "id": "AMD.Adrenalin",
         "publisher": "AMD",
         "name": "AMD: Adrenalin",
-        "url": "https://drivers.amd.com/drivers/installer/25.20/whql/amd-software-adrenalin-edition-25.12.1-minimalsetup-251207_web.exe",
+        "url": "https://www.amd.com/en/support/download/drivers.html",
         "search_page": "https://www.amd.com/pt/support/download/drivers.html",
         "search_regex": "https://www.amd.com/pt/support/download/drivers.html"
     }
